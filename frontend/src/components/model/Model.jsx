@@ -4,8 +4,57 @@ import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader';
 
-// Material with texture support
-const EnhancedModel = ({ model, materialProps, texture }) => {
+// Helper function to check if a geometry is valid
+const isGeometryValid = (geometry) => {
+  if (!geometry?.attributes?.position) return false;
+  
+  const positions = geometry.attributes.position.array;
+  // Check if we have enough vertices for at least one triangle (9 values: 3 vertices × 3 coordinates)
+  if (positions.length < 9) return false;
+  
+  // Check if all values are valid numbers
+  for (let i = 0; i < positions.length; i++) {
+    if (isNaN(positions[i]) || !isFinite(positions[i])) {
+      return false;
+    }
+  }
+  
+  return true;
+};
+
+// Helper function to sanitize geometry by fixing NaN values
+const sanitizeGeometry = (geometry) => {
+  if (!geometry?.attributes?.position) return false;
+  
+  const positions = geometry.attributes.position.array;
+  let hasFixedValues = false;
+  
+  // Replace NaN values with zeros
+  for (let i = 0; i < positions.length; i++) {
+    if (isNaN(positions[i]) || !isFinite(positions[i])) {
+      positions[i] = 0;
+      hasFixedValues = true;
+    }
+  }
+  
+  if (hasFixedValues) {
+    geometry.attributes.position.needsUpdate = true;
+    console.warn('Fixed NaN/Infinite values in geometry positions');
+  }
+  
+  return hasFixedValues;
+};
+
+// Material with texture support and pointer event handling
+const EnhancedModel = ({ 
+  model, 
+  materialProps, 
+  texture, 
+  onPointerDown,
+  onPointerMove, 
+  onPointerUp, 
+  onPointerLeave 
+}) => {
   const meshRef = useRef();
   
   // Apply material properties to the model
@@ -39,63 +88,43 @@ const EnhancedModel = ({ model, materialProps, texture }) => {
         ref={meshRef}
         object={model} 
         dispose={null}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerLeave={onPointerLeave}
       />
     );
   }
   
-  return <primitive object={model} dispose={null} />;
+  // Add events to group
+  return (
+    <primitive 
+      object={model} 
+      dispose={null}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerLeave={onPointerLeave}
+    />
+  );
 };
 
-// Helper function to sanitize geometry by fixing NaN values
-const sanitizeGeometry = (geometry) => {
-  if (!geometry?.attributes?.position) return false;
-  
-  const positions = geometry.attributes.position.array;
-  let hasFixedValues = false;
-  
-  // Replace NaN values with zeros
-  for (let i = 0; i < positions.length; i++) {
-    if (isNaN(positions[i]) || !isFinite(positions[i])) {
-      positions[i] = 0;
-      hasFixedValues = true;
-    }
-  }
-  
-  if (hasFixedValues) {
-    geometry.attributes.position.needsUpdate = true;
-    console.warn('Fixed NaN/Infinite values in geometry positions');
-  }
-  
-  return hasFixedValues;
-};
-
-// Helper function to check if a geometry is valid
-const isGeometryValid = (geometry) => {
-  if (!geometry?.attributes?.position) return false;
-  
-  const positions = geometry.attributes.position.array;
-  // Check if we have enough vertices for at least one triangle (9 values: 3 vertices × 3 coordinates)
-  if (positions.length < 9) return false;
-  
-  // Check if all values are valid numbers
-  let allValid = true;
-  for (let i = 0; i < positions.length; i++) {
-    if (isNaN(positions[i]) || !isFinite(positions[i])) {
-      allValid = false;
-      break;
-    }
-  }
-  
-  return allValid;
-};
-
-// Model loader component
-const Model = ({ url, fileFormat, materialProps, texturePath }) => {
+// Then update the Model component to include these props:
+const Model = ({ 
+  url, 
+  fileFormat, 
+  materialProps, 
+  texturePath,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerLeave 
+}) => {
   const [model, setModel] = useState(null);
   const [error, setError] = useState(null);
   const [texture, setTexture] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Load texture if specified
   useEffect(() => {
     if (texturePath) {
@@ -115,7 +144,7 @@ const Model = ({ url, fileFormat, materialProps, texturePath }) => {
       setTexture(null);
     }
   }, [texturePath]);
-  
+
   // Clean up when component unmounts or model changes
   useEffect(() => {
     return () => {
@@ -134,14 +163,14 @@ const Model = ({ url, fileFormat, materialProps, texturePath }) => {
       }
     };
   }, [model]);
-  
+
   // Load model
   useEffect(() => {
     let loader;
     let isMounted = true;
-    
+
     if (!url || !fileFormat) return;
-    
+
     if (fileFormat === 'stl') {
       loader = new STLLoader();
     } else if (fileFormat === 'obj') {
@@ -150,34 +179,34 @@ const Model = ({ url, fileFormat, materialProps, texturePath }) => {
       setError(`Unsupported file format: ${fileFormat}`);
       return;
     }
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     loader.load(
       url,
       (loadedModel) => {
         if (!isMounted) return;
-        
+
         try {
           if (fileFormat === 'stl') {
             // STL loader returns a BufferGeometry
             const geometry = loadedModel;
-            
+
             // Fix NaN values in geometry
             sanitizeGeometry(geometry);
-            
+
             // Check if the geometry is valid after fixing NaN values
             if (!isGeometryValid(geometry)) {
               throw new Error("STL model doesn't contain valid geometry data");
             }
-            
+
             try {
               // Compute vertex normals if they don't exist
               if (!geometry.attributes.normal) {
                 geometry.computeVertexNormals();
               }
-              
+
               // Safely compute the bounding box
               try {
                 geometry.computeBoundingBox();
@@ -189,7 +218,7 @@ const Model = ({ url, fileFormat, materialProps, texturePath }) => {
                   new THREE.Vector3(1, 1, 1)
                 );
               }
-              
+
               // Safely compute the bounding sphere
               try {
                 geometry.computeBoundingSphere();
@@ -197,21 +226,21 @@ const Model = ({ url, fileFormat, materialProps, texturePath }) => {
                 console.error('Error computing bounding sphere:', boundingSphereError);
                 // Create a default bounding sphere
                 geometry.boundingSphere = new THREE.Sphere(
-                  new THREE.Vector3(0, 0, 0), 
+                  new THREE.Vector3(0, 0, 0),
                   1.732 // Approximate radius of a sphere containing a 1×1×1 box
                 );
               }
-              
+
               // Create material and mesh
               const material = new THREE.MeshStandardMaterial({
                 color: 0x7777ff,
                 metalness: 0.1,
                 roughness: 0.5,
               });
-              
+
               // Create the mesh with our sanitized geometry
               const mesh = new THREE.Mesh(geometry, material);
-              
+
               // Center the model
               if (geometry.boundingBox) {
                 const center = new THREE.Vector3();
@@ -219,11 +248,11 @@ const Model = ({ url, fileFormat, materialProps, texturePath }) => {
                 // Use the center to offset the mesh position to center it
                 mesh.position.set(-center.x, -center.y, -center.z);
               }
-              
+
               setModel(mesh);
             } catch (geometryError) {
               console.error('Error processing STL geometry:', geometryError);
-              
+
               // Fallback: create a simple box as placeholder
               const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
               const material = new THREE.MeshStandardMaterial({
@@ -240,7 +269,7 @@ const Model = ({ url, fileFormat, materialProps, texturePath }) => {
               // Check if OBJ contains any valid meshes
               let hasValidGeometry = false;
               let geometryCount = 0;
-              
+
               // First pass: count and validate geometries
               loadedModel.traverse((child) => {
                 if (child instanceof THREE.Mesh) {
@@ -259,9 +288,9 @@ const Model = ({ url, fileFormat, materialProps, texturePath }) => {
                   }
                 }
               });
-              
+
               console.log(`OBJ contains ${geometryCount} geometries, valid: ${hasValidGeometry}`);
-              
+
               // If no valid geometries were found, try to create a basic one
               if (!hasValidGeometry) {
                 if (geometryCount === 0) {
@@ -270,7 +299,7 @@ const Model = ({ url, fileFormat, materialProps, texturePath }) => {
                   throw new Error("OBJ model doesn't contain any valid geometries");
                 }
               }
-              
+
               // Process meshes and compute normals/bounds
               loadedModel.traverse((child) => {
                 if (child instanceof THREE.Mesh && child.geometry) {
@@ -278,7 +307,7 @@ const Model = ({ url, fileFormat, materialProps, texturePath }) => {
                   if (!child.geometry.attributes.normal) {
                     child.geometry.computeVertexNormals();
                   }
-                  
+
                   // Safely compute bounding information
                   try {
                     child.geometry.computeBoundingBox();
@@ -291,13 +320,13 @@ const Model = ({ url, fileFormat, materialProps, texturePath }) => {
                       new THREE.Vector3(1, 1, 1)
                     );
                     child.geometry.boundingSphere = new THREE.Sphere(
-                      new THREE.Vector3(0, 0, 0), 
+                      new THREE.Vector3(0, 0, 0),
                       1.732
                     );
                   }
                 }
               });
-              
+
               // Try to center the model safely
               try {
                 const box = new THREE.Box3().setFromObject(loadedModel);
@@ -318,11 +347,11 @@ const Model = ({ url, fileFormat, materialProps, texturePath }) => {
                 console.error('Error centering model:', centerError);
                 loadedModel.position.set(0, 0, 0);
               }
-              
+
               setModel(loadedModel);
             } catch (objError) {
               console.error('Error processing OBJ model:', objError);
-              
+
               // Create a fallback model
               const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
               const material = new THREE.MeshStandardMaterial({
@@ -336,7 +365,7 @@ const Model = ({ url, fileFormat, materialProps, texturePath }) => {
           }
         } catch (err) {
           console.error('Error processing model:', err);
-          
+
           // Create a fallback model
           const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
           const material = new THREE.MeshStandardMaterial({
@@ -358,7 +387,7 @@ const Model = ({ url, fileFormat, materialProps, texturePath }) => {
       (loadError) => {
         if (!isMounted) return;
         console.error('Error loading model:', loadError);
-        
+
         // Create a fallback model for loading errors
         const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
         const material = new THREE.MeshStandardMaterial({
@@ -371,13 +400,13 @@ const Model = ({ url, fileFormat, materialProps, texturePath }) => {
         setIsLoading(false);
       }
     );
-    
+
     // Cleanup function
     return () => {
       isMounted = false;
     };
   }, [url, fileFormat]);
-  
+
   if (error) {
     return (
       <mesh>
@@ -386,7 +415,7 @@ const Model = ({ url, fileFormat, materialProps, texturePath }) => {
       </mesh>
     );
   }
-  
+
   if (isLoading) {
     return (
       <mesh>
@@ -395,8 +424,18 @@ const Model = ({ url, fileFormat, materialProps, texturePath }) => {
       </mesh>
     );
   }
-  
-  return <EnhancedModel model={model} materialProps={materialProps} texture={texture} />;
+
+  return (
+    <EnhancedModel 
+      model={model} 
+      materialProps={materialProps} 
+      texture={texture}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerLeave={onPointerLeave}
+    />
+  );
 };
 
 export default Model;
