@@ -21,10 +21,10 @@ function GridControls({ gridOptions, setGridOptions }) {
   const resetGridSettings = () => {
     setGridOptions({
       visible: true,
-      size: 30,
-      divisions: 20,
-      color1: '#888888',
-      color2: '#444444',
+      size: 100,
+      divisions: 40,
+      color1: '#aaaaaa', // Lighter color for secondary grid lines
+      color2: '#555555', // Darker color for primary grid lines
       infiniteGrid: false
     });
   };
@@ -73,7 +73,7 @@ function GridControls({ gridOptions, setGridOptions }) {
         </p>
       </div>
       
-      {/* Grid Size */}
+      {/* Grid Size - Slider with preset options */}
       <div className="mb-4">
         <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">
           <ArrowsPointingOutIcon className="w-4 h-4 mr-1.5 text-gray-500" />
@@ -82,9 +82,9 @@ function GridControls({ gridOptions, setGridOptions }) {
         <div className="flex items-center">
           <input 
             type="range" 
-            min="10" 
-            max="200" 
-            step="10"
+            min="100" 
+            max="5000" 
+            step={gridOptions.size < 1000 ? 10 : 100}
             value={gridOptions.size}
             onChange={(e) => setGridOptions({
               ...gridOptions,
@@ -92,13 +92,35 @@ function GridControls({ gridOptions, setGridOptions }) {
             })}
             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
           />
-          <span className="ml-2 text-xs text-gray-500 min-w-[2rem] text-right">
+          <span className="ml-2 text-xs text-gray-500 min-w-[3rem] text-right">
             {gridOptions.size}
           </span>
         </div>
+        <div className="grid grid-cols-4 gap-1 mt-1">
+          <button 
+            onClick={() => setGridOptions({...gridOptions, size: 50})}
+            className="text-xs text-gray-500 bg-gray-100 py-1 px-1 rounded hover:bg-gray-200">
+            50
+          </button>
+          <button 
+            onClick={() => setGridOptions({...gridOptions, size: 100})}
+            className="text-xs text-gray-500 bg-gray-100 py-1 px-1 rounded hover:bg-gray-200">
+            100
+          </button>
+          <button 
+            onClick={() => setGridOptions({...gridOptions, size: 500})}
+            className="text-xs text-gray-500 bg-gray-100 py-1 px-1 rounded hover:bg-gray-200">
+            500
+          </button>
+          <button 
+            onClick={() => setGridOptions({...gridOptions, size: 1000})}
+            className="text-xs text-gray-500 bg-gray-100 py-1 px-1 rounded hover:bg-gray-200">
+            1000
+          </button>
+        </div>
       </div>
       
-      {/* Grid Divisions */}
+      {/* Grid Divisions - Slider with improved range */}
       <div className="mb-4">
         <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">
           <TableCellsIcon className="w-4 h-4 mr-1.5 text-gray-500" />
@@ -108,7 +130,7 @@ function GridControls({ gridOptions, setGridOptions }) {
           <input 
             type="range" 
             min="5" 
-            max="50" 
+            max="100" 
             value={gridOptions.divisions}
             onChange={(e) => setGridOptions({
               ...gridOptions,
@@ -120,13 +142,39 @@ function GridControls({ gridOptions, setGridOptions }) {
             {gridOptions.divisions}
           </span>
         </div>
+        <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <span>Few lines</span>
+          <span>Many lines</span>
+        </div>
+        <div className="grid grid-cols-4 gap-1 mt-1">
+          <button 
+            onClick={() => setGridOptions({...gridOptions, divisions: 10})}
+            className="text-xs text-gray-500 bg-gray-100 py-1 px-1 rounded hover:bg-gray-200">
+            10
+          </button>
+          <button 
+            onClick={() => setGridOptions({...gridOptions, divisions: 20})}
+            className="text-xs text-gray-500 bg-gray-100 py-1 px-1 rounded hover:bg-gray-200">
+            20
+          </button>
+          <button 
+            onClick={() => setGridOptions({...gridOptions, divisions: 50})}
+            className="text-xs text-gray-500 bg-gray-100 py-1 px-1 rounded hover:bg-gray-200">
+            50
+          </button>
+          <button 
+            onClick={() => setGridOptions({...gridOptions, divisions: 100})}
+            className="text-xs text-gray-500 bg-gray-100 py-1 px-1 rounded hover:bg-gray-200">
+            100
+          </button>
+        </div>
       </div>
       
-      {/* Primary Grid Color */}
+      {/* Secondary Grid Color (Lighter) */}
       <div className="mb-4">
         <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">
           <SwatchIcon className="w-4 h-4 mr-1.5 text-gray-500" />
-          {gridOptions.infiniteGrid ? "Cell Color" : "Primary Grid Color"}
+          {gridOptions.infiniteGrid ? "Cell Color" : "Secondary Grid Color"}
         </label>
         <div className="flex items-center">
           <div className="flex items-center border border-gray-300 rounded p-1">
@@ -143,7 +191,7 @@ function GridControls({ gridOptions, setGridOptions }) {
                 {gridOptions.color1}
               </span>
               <button
-                onClick={() => handleColorChange('color1', '#888888')}
+                onClick={() => handleColorChange('color1', '#aaaaaa')}
                 className="text-xs text-indigo-600 hover:text-indigo-800"
               >
                 Reset
@@ -151,13 +199,14 @@ function GridControls({ gridOptions, setGridOptions }) {
             </div>
           </div>
         </div>
+        <p className="text-xs text-gray-500 mt-1">Lighter color for secondary lines</p>
       </div>
       
-      {/* Secondary Grid Color */}
+      {/* Primary Grid Color (Darker) */}
       <div className="mb-4">
         <label className="flex items-center text-sm font-medium text-gray-700 mb-1.5">
           <SwatchIcon className="w-4 h-4 mr-1.5 text-gray-500" />
-          {gridOptions.infiniteGrid ? "Section Color" : "Secondary Grid Color"}
+          {gridOptions.infiniteGrid ? "Section Color" : "Primary Grid Color"}
         </label>
         <div className="flex items-center">
           <div className="flex items-center border border-gray-300 rounded p-1">
@@ -174,7 +223,7 @@ function GridControls({ gridOptions, setGridOptions }) {
                 {gridOptions.color2}
               </span>
               <button
-                onClick={() => handleColorChange('color2', '#444444')}
+                onClick={() => handleColorChange('color2', '#555555')}
                 className="text-xs text-indigo-600 hover:text-indigo-800"
               >
                 Reset
@@ -182,6 +231,7 @@ function GridControls({ gridOptions, setGridOptions }) {
             </div>
           </div>
         </div>
+        <p className="text-xs text-gray-500 mt-1">Darker color for main grid lines</p>
       </div>
       
       {/* Reset All Grid Settings */}

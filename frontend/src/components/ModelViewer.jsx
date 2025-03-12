@@ -1,4 +1,3 @@
-// src/components/ModelViewer.jsx
 import { useState, useEffect, useRef } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, Environment, PerspectiveCamera } from '@react-three/drei';
@@ -12,13 +11,20 @@ import CustomGrid from './scene/CustomGrid';
 import CustomLights from './scene/CustomLights';
 import ControlSidebar from './controls/ControlSidebar';
 
-// Camera controller component for camera positioning and fitting
+// Camera controller component with improved far plane
 const CameraController = ({ modelRef, defaultPosition = [0, 5, 10] }) => {
   const { camera, scene } = useThree();
   const controlsRef = useRef();
   const [initialized, setInitialized] = useState(false);
 
-  // Function to fit camera to model
+  // Set far plane when component mounts
+  useEffect(() => {
+    // Increase far plane to handle large models and distant views
+    camera.far = 100000;
+    camera.updateProjectionMatrix();
+  }, [camera]);
+
+  // Function to fit camera to model with better handling for large models
   const fitCameraToModel = () => {
     if (!modelRef.current || !controlsRef.current) return;
 
@@ -35,13 +41,22 @@ const CameraController = ({ modelRef, defaultPosition = [0, 5, 10] }) => {
       const size = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
       
-      // Calculate distance needed to frame the model
+      // Get the maximum dimension of the model
       const maxDim = Math.max(size.x, size.y, size.z);
+      
+      // Adjust camera distance based on model size
+      let scaleFactor = 1.2; // Default padding
+      
+      // Increase scale factor for very large models
+      if (maxDim > 1000) scaleFactor = 1.5;
+      if (maxDim > 10000) scaleFactor = 2.0;
+      
+      // Calculate distance needed to frame the model
       const fitHeightDistance = maxDim / Math.tan((Math.PI * camera.fov) / 360);
       const fitWidthDistance = fitHeightDistance / camera.aspect;
-      const distance = 1.2 * Math.max(fitHeightDistance, fitWidthDistance);
+      const distance = scaleFactor * Math.max(fitHeightDistance, fitWidthDistance);
       
-      // Set target to center of model
+      // Ensure controls target is set to model center
       controlsRef.current.target.copy(center);
       
       // Position camera
@@ -52,6 +67,11 @@ const CameraController = ({ modelRef, defaultPosition = [0, 5, 10] }) => {
       
       camera.position.copy(center).add(direction);
       controlsRef.current.update();
+      
+      // Log dimensions for debugging
+      console.log('Model size:', size);
+      console.log('Model center:', center);
+      console.log('Camera distance:', distance);
     } catch (error) {
       console.error("Error fitting camera to model:", error);
     }
@@ -95,7 +115,7 @@ const CameraController = ({ modelRef, defaultPosition = [0, 5, 10] }) => {
       enableZoom 
       enableRotate 
       minDistance={0.1}
-      maxDistance={1000}
+      maxDistance={100000} // Increase max distance for large models
     />
   );
 };
@@ -104,13 +124,13 @@ const ModelViewer = ({ selectedModel }) => {
   const modelRef = useRef();
   const [darkMode, setDarkMode] = useState(false);
   
-  // Grid settings
+  // Grid settings with larger default size
   const [gridOptions, setGridOptions] = useState({
     visible: true,
-    size: 30,
+    size: 100, // Larger default grid
     divisions: 20,
-    color1: '#888888',  // Primary grid color (thinner lines)
-    color2: '#444444',  // Secondary grid color (thicker section lines)
+    color1: '#888888',
+    color2: '#444444',
     infiniteGrid: false
   });
   
@@ -217,7 +237,11 @@ const ModelViewer = ({ selectedModel }) => {
         </div>
         
         {/* Canvas for 3D rendering */}
-        <Canvas shadows gl={{ antialias: true }}>
+        <Canvas 
+          shadows={{ enabled: true, type: THREE.PCFSoftShadowMap }} 
+          gl={{ antialias: true }}
+          camera={{ far: 100000 }}  // Set far plane for initial camera
+        >
           <color attach="background" args={[darkMode ? '#1a1a1a' : '#f8f9fa']} />
           
           {/* Camera */}
@@ -225,6 +249,7 @@ const ModelViewer = ({ selectedModel }) => {
             makeDefault
             position={defaultCameraPosition} 
             fov={50}
+            far={100000}  // Set far plane for PerspectiveCamera
           />
           
           {/* Custom lights */}
@@ -251,7 +276,7 @@ const ModelViewer = ({ selectedModel }) => {
           />
           
           {/* Model */}
-          <group ref={modelRef}>
+          <group ref={modelRef} position={[0, 0.05, 0]}>
             <Model 
               url={modelUrl} 
               fileFormat={selectedModel.format}

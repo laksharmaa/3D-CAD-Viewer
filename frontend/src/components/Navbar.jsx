@@ -1,5 +1,5 @@
 // src/components/Navbar.jsx
-import { Box, Github, Settings } from 'lucide-react';
+import { Box, Github} from 'lucide-react';
 
 const Navbar = () => {
   return (
@@ -12,11 +12,8 @@ const Navbar = () => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <button className="flex items-center space-x-1 hover:text-blue-200 transition-colors">
-              <Settings className="h-5 w-5" />
-              <span className="hidden md:inline">Settings</span>
-            </button>
-            <a href="https://github.com/yourusername/cad-viewer" 
+            
+            <a href="https://github.com/laksharmaa/3D-CAD-Viewer" 
                target="_blank" 
                rel="noopener noreferrer"
                className="flex items-center space-x-1 hover:text-blue-200 transition-colors">

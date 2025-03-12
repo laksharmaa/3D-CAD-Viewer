@@ -45,6 +45,20 @@ const sanitizeGeometry = (geometry) => {
   return hasFixedValues;
 };
 
+// Function to correct model orientation
+const correctOrientation = (model) => {
+  // Apply rotation to make model face forward
+  if (model instanceof THREE.Mesh) {
+    // For STL models - rotate to face forward
+    model.rotation.x = -Math.PI / 2; // Rotate around X axis to make vertical
+  } else if (model) {
+    // For OBJ models or other groups
+    model.rotation.x = -Math.PI / 2;
+  }
+  
+  return model;
+};
+
 // Material with texture support and pointer event handling
 const EnhancedModel = ({ 
   model, 
@@ -88,6 +102,7 @@ const EnhancedModel = ({
         ref={meshRef}
         object={model} 
         dispose={null}
+        position={[0, 0.01, 0]} // Slightly raise the model above the grid
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -101,6 +116,7 @@ const EnhancedModel = ({
     <primitive 
       object={model} 
       dispose={null}
+      position={[0, 0.01, 0]} // Slightly raise the model above the grid
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -129,6 +145,7 @@ const Model = ({
   useEffect(() => {
     if (texturePath) {
       const textureLoader = new THREE.TextureLoader();
+      textureLoader.setCrossOrigin('anonymous');
       textureLoader.load(
         texturePath,
         (loadedTexture) => {
@@ -240,6 +257,9 @@ const Model = ({
 
               // Create the mesh with our sanitized geometry
               const mesh = new THREE.Mesh(geometry, material);
+              
+              // Apply rotation to make the model face forward
+              mesh.rotation.x = -Math.PI / 2;
 
               // Center the model
               if (geometry.boundingBox) {
@@ -324,8 +344,15 @@ const Model = ({
                       1.732
                     );
                   }
+                  
+                  // Apply shadow properties
+                  child.castShadow = true;
+                  child.receiveShadow = true;
                 }
               });
+
+              // Apply rotation to make the model face forward
+              loadedModel.rotation.x = -Math.PI / 2;
 
               // Try to center the model safely
               try {
@@ -409,7 +436,7 @@ const Model = ({
 
   if (error) {
     return (
-      <mesh>
+      <mesh position={[0, 0.01, 0]}>
         <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial color="red" wireframe={true} />
       </mesh>
@@ -418,7 +445,7 @@ const Model = ({
 
   if (isLoading) {
     return (
-      <mesh>
+      <mesh position={[0, 0.01, 0]}>
         <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial color="#4f6df5" wireframe={true} />
       </mesh>
