@@ -9,47 +9,37 @@ const CustomGrid = ({ visible, size, divisions, color1, color2, infiniteGrid }) 
   const gridPosition = [0, -0.05, 0];
   
   if (infiniteGrid) {
-    // Use drei Grid for infinite grid with improved settings
-    const cellSize = size / divisions;
-    const sectionSize = size / Math.min(10, Math.max(3, Math.floor(divisions / 5)));
-    
+    // Enhanced infinite grid with extended view distance
     return (
       <Grid 
-        cellSize={cellSize}
-        cellThickness={0.3} // Thinner primary lines
+        cellSize={Math.max(1, size / divisions)}
+        cellThickness={0.3}  // Thinner primary lines
         cellColor={color1}
-        sectionSize={sectionSize}
+        sectionSize={Math.max(10, size / Math.max(3, Math.min(10, Math.floor(divisions / 4))))}
         sectionThickness={1.0}
         sectionColor={color2}
-        fadeDistance={500}
-        fadeStrength={0.8}
+        fadeDistance={2000}  // Extended fade distance
+        fadeStrength={0.3}   // Lower fade strength to see further
         infiniteGrid={true}
         position={gridPosition}
       />
     );
   }
   
-  // Use standard Three.js gridHelper for finite grid
-  // Create a more detailed grid with secondary lines
-  const effectiveSize = Math.min(size, 5000); // Cap rendered size for performance
-  
-  // Calculate appropriate number of divisions for main grid lines
-  const mainDivisions = Math.min(100, Math.max(4, Math.floor(divisions / 4)));
-  
-  // Calculate total number of lines including secondary ones
-  const totalDivisions = divisions;
+  // For standard grid - create two overlapping grids for primary and secondary lines
+  const effectiveSize = Math.min(size, 10000); // Cap rendered size for performance
   
   return (
     <group position={gridPosition}>
       {/* Primary grid (thicker lines, fewer divisions) */}
       <gridHelper 
-        args={[effectiveSize, mainDivisions, color2, color2]} 
+        args={[effectiveSize, Math.max(4, Math.floor(divisions / 5)), color2, color2]} 
         position={[0, 0.001, 0]}
       />
       
       {/* Secondary grid (thinner lines, more divisions) */}
       <gridHelper 
-        args={[effectiveSize, totalDivisions, color1, color1]} 
+        args={[effectiveSize, divisions, color1, color1]} 
         position={[0, 0, 0]}
       />
     </group>

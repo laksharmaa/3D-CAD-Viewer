@@ -312,7 +312,7 @@ const ModelViewer = ({ selectedModel }) => {
         </div>
       </div>
       
-      <div className="mt-4 text-sm text-gray-500 flex items-center justify-between">
+      {/* <div className="mt-4 text-sm text-gray-500 flex items-center justify-between"> */}
         <div>
           <p className="font-medium">Control the view:</p>
           <ul className="flex space-x-4 mt-1">
@@ -331,7 +331,7 @@ const ModelViewer = ({ selectedModel }) => {
           </ul>
         </div>
       </div>
-    </div>
+    // </div>
   );
 };
 

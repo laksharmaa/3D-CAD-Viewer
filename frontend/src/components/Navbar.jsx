@@ -8,8 +8,9 @@ const Navbar = () => {
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-3">
             <Box className="h-6 w-6" />
-            <span className="text-xl font-bold">Professional CAD Viewer</span>
+            <span className="text-xl font-bold">3D CAD Viewer</span>
           </div>
+          <div className="text-l font-mono">Insyde.IO</div>
           
           <div className="flex items-center space-x-4">
             
